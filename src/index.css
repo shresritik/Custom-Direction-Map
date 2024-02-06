@@ -1,3 +1,44 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+body {
+  margin: 0;
+  padding: 0;
+}
+.mapboxgl-popup {
+  max-width: 200px;
+}
+
+.mapboxgl-popup-content {
+  text-align: center;
+  font-family: "Open Sans", sans-serif;
+  background-color: white;
+}
+.marker {
+  position: fixed;
+  background-image: url("../src/assets/marker.png");
+  background-size: cover;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+#instructions {
+  position: absolute;
+  margin: 20px;
+  width: 25%;
+  top: 0;
+  bottom: 20%;
+  padding: 20px;
+  background-color: #fff;
+  overflow-y: scroll;
+  font-family: sans-serif;
+}
