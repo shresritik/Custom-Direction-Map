@@ -23,6 +23,15 @@ body {
   border-radius: 50%;
   cursor: pointer;
 }
+.landmark {
+  position: fixed;
+  background-image: url("../src/assets/landmark.png");
+  background-size: cover;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+}
 
 #map {
   position: absolute;

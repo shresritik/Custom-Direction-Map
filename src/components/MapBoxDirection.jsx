@@ -5,35 +5,48 @@ import useLocation from "../../hooks/useLocation";
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MapboxDirections = () => {
   const [map, setMap] = useState(null);
+  const [endCoords, setEndCoords] = useState({});
 
   const start = useLocation();
   const instructionFunc = (data) => {
-    console.log(data);
     const instructions = document.getElementById("instructions");
     const steps = data.legs[0].steps;
     let tripInstructions = "";
     for (const step of steps) {
-      step.geometry.coordinates.forEach((coord) => {
-        console.log(start[0] - coord[0]);
-        if (
-          Math.abs(start[0] - coord[0]) ||
-          Math.abs(start[1] - coord[1]) < 0.0001
-        ) {
-          tripInstructions += `<li>${step.maneuver.instruction}</li>`;
+      let coord = step.geometry.coordinates[0];
+      console.log("in instructionFunc", start, coord);
+      const el = document.createElement("div");
+      el.className = "landmark";
+      new mapboxgl.Marker(el, { offset: [0, -50 / 2] })
+        ?.setLngLat(coord)
+        ?.setPopup(
+          new mapboxgl.Popup({ offset: 25 }) // add popups
+            .setHTML(`<h3>${coord[0]}</h3><p>${coord[1]}</p>`)
+        )
+        ?.addTo(map);
+      console.log(
+        Math.abs(start[0] - coord[0]) < 0.001 ||
+          Math.abs(start[1] - coord[1]) < 0.001
+      );
+      if (
+        Math.abs(start[0] - coord[0]) < 0.001 ||
+        Math.abs(start[1] - coord[1]) < 0.001
+      ) {
+        tripInstructions += `<li>${step.maneuver.instruction}</li>`;
 
-          instructions.innerHTML = `<p><strong>Trip duration: ${Math.floor(
-            data.duration / 60
-          )} min 🚴 </strong></p><ol>${tripInstructions}</ol>`;
-        }
-      });
-      break;
+        instructions.innerHTML = `<p><strong>Trip duration: ${Math.floor(
+          data.duration / 60
+        )} min 🚴 </strong></p><ol>${tripInstructions}</ol><br/><h3>start: ${
+          start[0] + "," + start[1]
+        }</h3><br/><h3>landmark:${coord[0] + "," + coord[1]}</h3>`;
+        break;
+      }
     }
   };
-  async function getRoute(start, end) {
+  async function getRoute(end) {
     // make directions request using cycling profile
-    console.log(start, end);
     const query = await fetch(
-      `https://api.mapbox.com/directions/v5/mapbox/driving/${start[0]},${start[1]};${end[0]},${end[1]}?alternatives=true&annotations=duration%2Cdistance&geometries=geojson&language=en&overview=full&steps=true&voice_instructions=true&voice_units=imperial&access_token=${mapboxgl.accessToken}`,
+      `https://api.mapbox.com/directions/v5/mapbox/walking/${start[0]},${start[1]};${end[0]},${end[1]}?alternatives=true&annotations=duration%2Cdistance&geometries=geojson&language=en&overview=full&steps=true&voice_instructions=true&voice_units=imperial&access_token=${mapboxgl.accessToken}`,
       { method: "GET" }
     );
     const json = await query.json();
@@ -70,8 +83,10 @@ const MapboxDirections = () => {
           "line-opacity": 0.75,
         },
       });
-    } // get the sidebar and add the instructions
-    instructionFunc(data);
+    }
+    // get the sidebar and add the instructions
+    setEndCoords(data);
+    // instructionFunc(data, start);
   }
 
   useEffect(() => {
@@ -87,18 +102,15 @@ const MapboxDirections = () => {
   }, []);
 
   useEffect(() => {
-    let marker;
+    let marker, coords;
     if (map && start[0] > 0 && start[1] > 0) {
       map.setCenter(start);
 
       // make a marker for each feature and add it to the map
 
       console.log("start", start);
-
       map.on("click", (event) => {
-        const coords = Object.keys(event.lngLat).map(
-          (key) => event.lngLat[key]
-        );
+        coords = Object.keys(event.lngLat).map((key) => event.lngLat[key]);
         const end = {
           type: "FeatureCollection",
           features: [
@@ -141,31 +153,38 @@ const MapboxDirections = () => {
             },
           });
         }
-
-        getRoute(start, coords);
+        getRoute(coords);
       });
-      const el = document.createElement("div");
-      el.className = "marker";
-      marker = new mapboxgl.Marker(el, { offset: [0, -50 / 2] })
-        .setLngLat(start)
-        .setPopup(
-          new mapboxgl.Popup({ offset: 25 }) // add popups
-            .setHTML(`<h3>${start[0]}</h3><p>${start[1]}</p>`)
-        )
-        .addTo(map);
-
-      console.log(
-        new mapboxgl.Marker(el)
-          .setLngLat(start)
-          .setPopup(
+      // map.on("render", () => {
+      try {
+        if (Object.keys(endCoords).length > 0) instructionFunc(endCoords);
+        const el = document.createElement("div");
+        el.className = "marker";
+        marker = new mapboxgl.Marker(el, { offset: [0, -50 / 2] })
+          ?.setLngLat(start)
+          ?.setPopup(
             new mapboxgl.Popup({ offset: 25 }) // add popups
               .setHTML(`<h3>${start[0]}</h3><p>${start[1]}</p>`)
           )
-          .addTo(map)
-      );
+          ?.addTo(map);
+        console.log(
+          new mapboxgl.Marker(el)
+            .setLngLat(start)
+            .setPopup(
+              new mapboxgl.Popup({ offset: 25 }) // add popups
+                .setHTML(`<h3>${start[0]}</h3><p>${start[1]}</p>`)
+            )
+            .addTo(map)
+        );
+        // });
+      } catch (err) {
+        console.log(err);
+        window.location.reload();
+      }
     }
+
     return () => marker?.remove();
-  }, [map, start]);
+  }, [map, start, endCoords]);
 
   return (
     <div className="flex flex-col  ">
