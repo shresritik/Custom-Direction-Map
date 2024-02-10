@@ -6,8 +6,48 @@ const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const MapboxDirections = () => {
   const [map, setMap] = useState(null);
   const [endCoords, setEndCoords] = useState({});
-
+  const radius = 0.008;
   const start = useLocation();
+  var createGeoJSONCircle = function (center, radiusInKm, points) {
+    if (!points) points = 64;
+
+    var coords = {
+      latitude: center[1],
+      longitude: center[0],
+    };
+
+    var km = radiusInKm;
+
+    var ret = [];
+    var distanceX = km / (111.32 * Math.cos((coords.latitude * Math.PI) / 180));
+    var distanceY = km / 110.574;
+
+    var theta, x, y;
+    for (var i = 0; i < points; i++) {
+      theta = (i / points) * (2 * Math.PI);
+      x = distanceX * Math.cos(theta);
+      y = distanceY * Math.sin(theta);
+
+      ret.push([coords.longitude + x, coords.latitude + y]);
+    }
+    ret.push(ret[0]);
+
+    return {
+      type: "geojson",
+      data: {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            geometry: {
+              type: "Polygon",
+              coordinates: [ret],
+            },
+          },
+        ],
+      },
+    };
+  };
   const instructionFunc = (data) => {
     const instructions = document.getElementById("instructions");
     const steps = data.legs[0].steps;
@@ -25,12 +65,12 @@ const MapboxDirections = () => {
         )
         ?.addTo(map);
       console.log(
-        Math.abs(start[0] - coord[0]) < 0.001 ||
-          Math.abs(start[1] - coord[1]) < 0.001
+        Math.abs(start[0] - coord[0]) < radius ||
+          Math.abs(start[1] - coord[1]) < radius
       );
       if (
-        Math.abs(start[0] - coord[0]) < 0.001 ||
-        Math.abs(start[1] - coord[1]) < 0.001
+        Math.abs(start[0] - coord[0]) < radius ||
+        Math.abs(start[1] - coord[1]) < radius
       ) {
         tripInstructions += `<li>${step.maneuver.instruction}</li>`;
 
@@ -60,6 +100,7 @@ const MapboxDirections = () => {
         coordinates: route,
       },
     };
+
     // if the route already exists on the map, we'll reset it using setData
     if (map.getSource("route")) {
       map.getSource("route").setData(geojson);
@@ -157,6 +198,27 @@ const MapboxDirections = () => {
       });
       // map.on("render", () => {
       try {
+        if (map?.getSource("polygon") || map?.getLayer("polygon")) {
+          console.log("here");
+          map
+            .getSource("polygon")
+            .setData(createGeoJSONCircle(start, radius).data);
+        } else {
+          map.addSource(
+            "polygon",
+            createGeoJSONCircle([start[0], start[1]], radius)
+          );
+          map.addLayer({
+            id: "polygon",
+            type: "fill",
+            source: "polygon",
+            layout: {},
+            paint: {
+              "fill-color": "blue",
+              "fill-opacity": 0.6,
+            },
+          });
+        }
         if (Object.keys(endCoords).length > 0) instructionFunc(endCoords);
         const el = document.createElement("div");
         el.className = "marker";
