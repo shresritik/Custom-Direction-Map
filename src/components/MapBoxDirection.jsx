@@ -65,12 +65,13 @@ const MapboxDirections = () => {
         )
         ?.addTo(map);
       console.log(
-        Math.abs(start[0] - coord[0]) < radius ||
-          Math.abs(start[1] - coord[1]) < radius
+        (Math.abs(start[0] - coord[0]) < 0.0001 ||
+          Math.abs(start[1] - coord[1]) < 0.0001) &&
+          coord
       );
       if (
-        Math.abs(start[0] - coord[0]) < radius ||
-        Math.abs(start[1] - coord[1]) < radius
+        Math.abs(start[0] - coord[0]) < 0.0001 ||
+        Math.abs(start[1] - coord[1]) < 0.0001
       ) {
         tripInstructions += `<li>${step.maneuver.instruction}</li>`;
 
@@ -79,7 +80,7 @@ const MapboxDirections = () => {
         )} min 🚴 </strong></p><ol>${tripInstructions}</ol><br/><h3>start: ${
           start[0] + "," + start[1]
         }</h3><br/><h3>landmark:${coord[0] + "," + coord[1]}</h3>`;
-        break;
+        // break;
       }
     }
   };
