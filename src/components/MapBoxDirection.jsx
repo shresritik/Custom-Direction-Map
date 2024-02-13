@@ -49,6 +49,8 @@ const MapboxDirections = () => {
     };
   };
   const instructionFunc = (data) => {
+    console.log(data);
+
     const instructions = document.getElementById("instructions");
     const steps = data.legs[0].steps;
     let tripInstructions = "";
@@ -70,14 +72,16 @@ const MapboxDirections = () => {
           coord
       );
       if (
-        Math.abs(start[0] - coord[0]) < 0.0001 ||
+        Math.abs(start[0] - coord[0]) < 0.0001 &&
         Math.abs(start[1] - coord[1]) < 0.0001
       ) {
-        tripInstructions += `<li>${step.maneuver.instruction}</li>`;
+        // tripInstructions += `<li>${step.maneuver.instruction}</li>`;
 
         instructions.innerHTML = `<p><strong>Trip duration: ${Math.floor(
-          data.duration / 60
-        )} min 🚴 </strong></p><ol>${tripInstructions}</ol><br/><h3>start: ${
+          step.duration / 60
+        )} min 🚴 </strong></p><ol>${
+          step.maneuver.instruction
+        }</ol><br/><h3>start: ${
           start[0] + "," + start[1]
         }</h3><br/><h3>landmark:${coord[0] + "," + coord[1]}</h3>`;
         // break;
