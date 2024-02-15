@@ -109,12 +109,26 @@ const MapboxDirections = () => {
       },
     };
   };
+  const sendResponseToServer = async (data) => {
+    const res = await fetch("http://127.0.0.1:5000/api/response", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // 'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: JSON.stringify({
+        response: data,
+      }),
+    });
+    const resData = await res.json();
+    console.log(resData);
+  };
   const instructionFunc = (data) => {
     console.log(data);
 
     const instructions = document.getElementById("instructions");
     const steps = data.legs[0].steps;
-    let tripInstructions = "";
+    // let tripInstructions = "";
     for (const step of steps) {
       let coord = step.geometry.coordinates[0];
       console.log("in instructionFunc", start, coord);
@@ -127,24 +141,34 @@ const MapboxDirections = () => {
             .setHTML(`<h3>${coord[0]}</h3><p>${coord[1]}</p>`)
         )
         ?.addTo(map);
-      console.log(
-        (Math.abs(start[0] - coord[0]) < 0.0001 ||
-          Math.abs(start[1] - coord[1]) < 0.0001) &&
-          coord
-      );
+      // console.log(
+      //   (Math.abs(start[0] - coord[0]) < 0.0001 ||
+      //     Math.abs(start[1] - coord[1]) < 0.0001) &&
+      //     coord
+      // );
       if (
         Math.abs(start[0] - coord[0]) < 0.0001 &&
         Math.abs(start[1] - coord[1]) < 0.0001
       ) {
         // tripInstructions += `<li>${step.maneuver.instruction}</li>`;
 
-        instructions.innerHTML = `<p><strong>Trip duration: ${Math.floor(
+        instructions.innerHTML = `<p><strong>'${
+          step.name.length > 0 && `Your current location is ${step.name}`
+        }'</strong><br/><strong>Trip duration: ${Math.floor(
           step.duration / 60
         )} min 🚴 </strong></p><ol>${
           step.maneuver.instruction
         }</ol><br/><h3>start: ${
           start[0] + "," + start[1]
         }</h3><br/><h3>landmark:${coord[0] + "," + coord[1]}</h3>`;
+
+        let msg = `${
+          step.name.length > 0 && "Your current location is" + step.name
+        }
+        .${step.maneuver.instruction}. Trip duration is ${Math.floor(
+          step.duration / 60
+        )} minutes `;
+        sendResponseToServer(msg);
         // break;
       }
     }
